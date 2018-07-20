@@ -5,6 +5,8 @@ def f(a: int) -> None:
     x = 1
     if x == a:
         y = 1
+        y = 2
+        y = 3
     else:
         z = 1
 [out]

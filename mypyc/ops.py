@@ -525,6 +525,20 @@ class Op(Value):
     def accept(self, visitor: 'OpVisitor[T]') -> T:
         pass
 
+    @abstractmethod
+    def sources(self) -> List[Value]:
+        pass
+
+    def safe_to_optimize_out(self) -> List[Value]:
+        '''
+        Whether we consider it safe to remove this operation in a dead code elimination
+        or common subexpression elimination pass.
+
+        Any side-effect-free op is safe to DCE/CSE, but some ops (such as casts or boxes/unboxes)
+        whose only side effects are type checks are considered safe to eliminate as well.
+        '''
+        # By default assume DCE is unsafe; only ops marked as safe should be DCEd.
+        return False
 
 class ControlOp(Op):
     # Basically just for hierarchy organization.
@@ -549,6 +563,9 @@ class Goto(ControlOp):
 
     def accept(self, visitor: 'OpVisitor[T]') -> T:
         return visitor.visit_goto(self)
+
+    def sources(self) -> List[Value]:
+        return []
 
 
 class Branch(ControlOp):
@@ -600,7 +617,6 @@ class Branch(ControlOp):
     def accept(self, visitor: 'OpVisitor[T]') -> T:
         return visitor.visit_branch(self)
 
-
 class Return(ControlOp):
     error_kind = ERR_NEVER
 
@@ -613,6 +629,9 @@ class Return(ControlOp):
 
     def accept(self, visitor: 'OpVisitor[T]') -> T:
         return visitor.visit_return(self)
+
+    def sources(self) -> List[Value]:
+        return [self.reg]
 
 
 class Unreachable(ControlOp):
@@ -636,6 +655,8 @@ class Unreachable(ControlOp):
     def accept(self, visitor: 'OpVisitor[T]') -> T:
         return visitor.visit_unreachable(self)
 
+    def sources(self) -> List[Value]:
+        return []
 
 class RegisterOp(Op):
     """An operation that can be written as r1 = f(r2, ..., rn).
@@ -651,10 +672,6 @@ class RegisterOp(Op):
     def __init__(self, line: int) -> None:
         super().__init__(line)
         assert self.error_kind != -1, 'error_kind not defined'
-
-    @abstractmethod
-    def sources(self) -> List[Value]:
-        pass
 
     def can_raise(self) -> bool:
         return self.error_kind != ERR_NEVER
@@ -887,6 +904,8 @@ class Assign(Op):
     def accept(self, visitor: 'OpVisitor[T]') -> T:
         return visitor.visit_assign(self)
 
+    def safe_to_optimize_out(self) -> bool:
+        return True
 
 class LoadInt(RegisterOp):
     """dest = int"""
@@ -907,6 +926,8 @@ class LoadInt(RegisterOp):
     def accept(self, visitor: 'OpVisitor[T]') -> T:
         return visitor.visit_load_int(self)
 
+    def safe_to_optimize_out(self) -> bool:
+        return True
 
 class LoadErrorValue(RegisterOp):
     """dest = <error value for type>"""
@@ -1089,6 +1110,9 @@ class Cast(RegisterOp):
 
     def accept(self, visitor: 'OpVisitor[T]') -> T:
         return visitor.visit_cast(self)
+
+    def safe_to_optimize_out(self) -> bool:
+        return True
 
 
 class Box(RegisterOp):

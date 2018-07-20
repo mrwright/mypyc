@@ -1582,3 +1582,23 @@ L7:
     goto L5
 L8:
     return r11
+
+[case asd_asd]
+from typing import Optional, List
+
+def f(x: Optional[List]):
+    a = 1
+    a = 1
+    a = 1
+    if x is not None:
+        y = x
+        z = x
+        x = x
+        z = x
+#    return y+z
+
+# def f(x: int):
+#     a = 1
+#     b = 1
+#     c = 1
+[out]

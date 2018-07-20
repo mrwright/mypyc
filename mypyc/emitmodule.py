@@ -16,14 +16,15 @@ from mypyc.emitwrapper import generate_wrapper_function, wrapper_function_header
 from mypyc.ops import FuncIR, ClassIR, ModuleIR
 from mypyc.refcount import insert_ref_count_opcodes
 from mypyc.exceptions import insert_exception_handling
-
+from mypyc.ops import format_func, Assign, LoadInt, Unbox, Box, Register
+from mypyc.cse import cse
+from mypyc.dce import dce
 
 class MarkedDeclaration:
     """Add a mark, useful for topological sort."""
     def __init__(self, declaration: HeaderDeclaration, mark: bool) -> None:
         self.declaration = declaration
         self.mark = False
-
 
 def compile_modules_to_c(sources: List[BuildSource], module_names: List[str], options: Options,
                          alt_lib_path: Optional[str] = None) -> str:
@@ -38,6 +39,8 @@ def compile_modules_to_c(sources: List[BuildSource], module_names: List[str], op
     # Generate basic IR, with missing exception and refcount handling.
     file_nodes = [result.files[name] for name in module_names]
     modules = genops.build_ir(file_nodes, result.types)
+    cse(modules)
+    dce(modules)
     # Insert exception handling.
     for _, module in modules:
         for fn in module.functions:

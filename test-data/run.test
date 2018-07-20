@@ -1814,3 +1814,28 @@ two 2
 one 1
 three 3
 #########
+
+[case asdasd]
+from typing import Optional, List
+
+def f(x: Optional[List]):
+    a = 1
+    a = 1
+    a = 1
+    if x is not None:
+        y = x
+        z = x
+        x = x
+        z = x
+#    return y+z
+
+# def f(x: int):
+#     a = 1
+#     b = 1
+#     c = 1
+
+l = [0]
+[file driver.py]
+from native import l
+print(l)
+[out]

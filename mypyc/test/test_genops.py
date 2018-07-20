@@ -13,6 +13,8 @@ from mypy.options import Options
 from mypy import experiments
 
 from mypyc import genops
+from mypyc.cse import cse
+from mypyc.dce import dce
 from mypyc.ops import format_func, FuncIR, is_empty_module_top_level
 
 from mypyc.test.testutil import (
@@ -68,6 +70,8 @@ class TestGenOps(MypycDataSuite):
                     actual = result.errors
                 else:
                     modules = genops.build_ir([result.files['__main__']], result.types)
+                    cse(modules)
+                    dce(modules)
                     module = modules[0][1]
                     actual = []
                     for fn in module.functions:
